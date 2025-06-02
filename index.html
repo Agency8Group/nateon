@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <title>음성 -> 텍스트 변환 데모</title>
+        <style>
+            body {
+                font-family: Arial;
+                padding: 20px;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 1.2rem;
+            }
+            #transcript {
+                margin-top: 20px;
+                font-size: 1.3rem;
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>녹음 시작 버튼 누르면 음성을 텍스트로 변환합니다</h2>
+        <button id="startBtn">녹음 시작</button>
+        <button id="stopBtn" disabled>녹음 중지</button>
+
+        <div
+            id="transcript"
+            placeholder="여기에 음성 텍스트가 표시됩니다..."
+        ></div>
+
+        <script>
+            const startBtn = document.getElementById("startBtn");
+            const stopBtn = document.getElementById("stopBtn");
+            const transcriptDiv = document.getElementById("transcript");
+
+            // Web Speech API가 지원되는지 확인
+            const SpeechRecognition =
+                window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert(
+                    "이 브라우저는 Speech Recognition API를 지원하지 않습니다. Chrome이나 Edge 최신 버전을 사용해 주세요."
+                );
+            } else {
+                const recognition = new SpeechRecognition();
+                recognition.lang = "ko-KR"; // 한국어 설정
+                recognition.interimResults = true; // 중간 결과도 보여줌
+                recognition.continuous = true; // 연속 인식
+
+                recognition.onresult = (event) => {
+                    let interimTranscript = "";
+                    let finalTranscript = "";
+                    for (
+                        let i = event.resultIndex;
+                        i < event.results.length;
+                        i++
+                    ) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+                    transcriptDiv.textContent =
+                        finalTranscript + "\n" + interimTranscript;
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Speech recognition error", event.error);
+                };
+
+                startBtn.onclick = () => {
+                    recognition.start();
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    transcriptDiv.textContent = "";
+                };
+
+                stopBtn.onclick = () => {
+                    recognition.stop();
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                };
+            }
+        </script>
+    </body>
+</html>
