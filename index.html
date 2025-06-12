@@ -2,85 +2,131 @@
 <html lang="ko">
     <head>
         <meta charset="UTF-8" />
-        <title>음성 -> 텍스트 변환 데모</title>
+        <title>아주 쉬운 단위 변환기</title>
         <style>
             body {
-                font-family: Arial;
-                padding: 20px;
+                font-family: "맑은 고딕", sans-serif;
+                max-width: 400px;
+                margin: 20px auto;
+            }
+            h2 {
+                font-size: 24px;
+            }
+            .section {
+                border: 2px solid #4caf50;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 10px;
+                background: #e8f5e9;
+            }
+            input[type="text"] {
+                width: 100%;
+                font-size: 20px;
+                padding: 10px;
+                margin-top: 10px;
+                box-sizing: border-box;
             }
             button {
-                padding: 10px 20px;
-                font-size: 1.2rem;
+                width: 100%;
+                font-size: 22px;
+                margin-top: 10px;
+                padding: 15px;
+                background: #4caf50;
+                border: none;
+                color: white;
+                border-radius: 8px;
+                cursor: pointer;
             }
-            #transcript {
-                margin-top: 20px;
-                font-size: 1.3rem;
-                white-space: pre-wrap;
+            button:hover {
+                background: #45a049;
+            }
+            .result {
+                margin-top: 15px;
+                font-size: 22px;
+                font-weight: bold;
+                min-height: 30px;
+                color: #333;
             }
         </style>
     </head>
     <body>
-        <h2>녹음 시작 버튼 누르면 음성을 텍스트로 변환합니다</h2>
-        <button id="startBtn">녹음 시작</button>
-        <button id="stopBtn" disabled>녹음 중지</button>
+        <h1>쉬운 단위 변환기</h1>
 
-        <div
-            id="transcript"
-            placeholder="여기에 음성 텍스트가 표시됩니다..."
-        ></div>
+        <div class="section" id="lengthSection">
+            <h2>길이 바꾸기</h2>
+            <input type="text" id="lengthInput" placeholder="예: 100m, 3.5km" />
+            <button onclick="convertLength()">변환하기</button>
+            <div class="result" id="lengthResult"></div>
+        </div>
+
+        <div class="section" id="weightSection">
+            <h2>무게 바꾸기</h2>
+            <input type="text" id="weightInput" placeholder="예: 2kg, 500g" />
+            <button onclick="convertWeight()">변환하기</button>
+            <div class="result" id="weightResult"></div>
+        </div>
+
+        <div class="section" id="timeSection">
+            <h2>시간 바꾸기</h2>
+            <input type="text" id="timeInput" placeholder="예: 1.5h, 30min" />
+            <button onclick="convertTime()">변환하기</button>
+            <div class="result" id="timeResult"></div>
+        </div>
 
         <script>
-            const startBtn = document.getElementById("startBtn");
-            const stopBtn = document.getElementById("stopBtn");
-            const transcriptDiv = document.getElementById("transcript");
+            // 단위 변환 규칙 - 길이
+            const lengthUnits = {
+                km: { to: "m", factor: 1000 },
+                m: { to: "cm", factor: 100 },
+                cm: { to: "m", factor: 0.01 },
+            };
 
-            // Web Speech API가 지원되는지 확인
-            const SpeechRecognition =
-                window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert(
-                    "이 브라우저는 Speech Recognition API를 지원하지 않습니다. Chrome이나 Edge 최신 버전을 사용해 주세요."
-                );
-            } else {
-                const recognition = new SpeechRecognition();
-                recognition.lang = "ko-KR"; // 한국어 설정
-                recognition.interimResults = true; // 중간 결과도 보여줌
-                recognition.continuous = true; // 연속 인식
+            // 단위 변환 규칙 - 무게
+            const weightUnits = {
+                kg: { to: "g", factor: 1000 },
+                g: { to: "kg", factor: 0.001 },
+            };
 
-                recognition.onresult = (event) => {
-                    let interimTranscript = "";
-                    let finalTranscript = "";
-                    for (
-                        let i = event.resultIndex;
-                        i < event.results.length;
-                        i++
-                    ) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
+            // 단위 변환 규칙 - 시간
+            const timeUnits = {
+                h: { to: "min", factor: 60 },
+                min: { to: "s", factor: 60 },
+            };
+
+            function convert(text, units) {
+                return text.replace(
+                    /(\d+(\.\d+)?)\s*(\w+)/gi,
+                    (match, numStr, _, unit) => {
+                        const num = parseFloat(numStr);
+                        const unitLower = unit.toLowerCase();
+                        if (units[unitLower]) {
+                            const conv = units[unitLower];
+                            const convertedNum = num * conv.factor;
+                            const fixedNum =
+                                Math.round(convertedNum * 100) / 100;
+                            return fixedNum + conv.to;
                         }
+                        return match;
                     }
-                    transcriptDiv.textContent =
-                        finalTranscript + "\n" + interimTranscript;
-                };
+                );
+            }
 
-                recognition.onerror = (event) => {
-                    console.error("Speech recognition error", event.error);
-                };
+            function convertLength() {
+                const input = document.getElementById("lengthInput").value;
+                const result = convert(input, lengthUnits);
+                document.getElementById("lengthResult").textContent = result;
+            }
 
-                startBtn.onclick = () => {
-                    recognition.start();
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                    transcriptDiv.textContent = "";
-                };
+            function convertWeight() {
+                const input = document.getElementById("weightInput").value;
+                const result = convert(input, weightUnits);
+                document.getElementById("weightResult").textContent = result;
+            }
 
-                stopBtn.onclick = () => {
-                    recognition.stop();
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                };
+            function convertTime() {
+                const input = document.getElementById("timeInput").value;
+                const result = convert(input, timeUnits);
+                document.getElementById("timeResult").textContent = result;
             }
         </script>
     </body>
